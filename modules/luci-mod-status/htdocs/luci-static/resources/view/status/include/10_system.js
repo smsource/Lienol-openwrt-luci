@@ -12,6 +12,11 @@ var callSystemInfo = rpc.declare({
 	method: 'info'
 });
 
+var callCPUInfo = rpc.declare({
+	object: 'luci',
+	method: 'getCPUInfo'
+});
+
 return L.Class.extend({
 	title: _('System'),
 
@@ -19,7 +24,8 @@ return L.Class.extend({
 		return Promise.all([
 			L.resolveDefault(callSystemBoard(), {}),
 			L.resolveDefault(callSystemInfo(), {}),
-			fs.lines('/usr/lib/lua/luci/version.lua')
+			fs.lines('/usr/lib/lua/luci/version.lua'),
+			L.resolveDefault(callCPUInfo(), {}),
 		]);
 	},
 
@@ -27,6 +33,8 @@ return L.Class.extend({
 		var boardinfo   = data[0],
 		    systeminfo  = data[1],
 		    luciversion = data[2];
+			
+		var cpuinfo = data[3];
 
 		luciversion = luciversion.filter(function(l) {
 			return l.match(/^\s*(luciname|luciversion)\s*=/);
@@ -52,7 +60,8 @@ return L.Class.extend({
 		var fields = [
 			_('Hostname'),         boardinfo.hostname,
 			_('Model'),            boardinfo.model,
-			_('Architecture'),     boardinfo.system,
+			_((cpuinfo && cpuinfo.result) ? 'CPU Info' : 'Architecture'),     (cpuinfo && cpuinfo.result) ? cpuinfo.result : boardinfo.system,
+			//_('Architecture'),     boardinfo.system,
 			_('Firmware Version'), (L.isObject(boardinfo.release) ? boardinfo.release.description + ' / ' : '') + (luciversion || ''),
 			_('Kernel Version'),   boardinfo.kernel,
 			_('Local Time'),       datestr,
